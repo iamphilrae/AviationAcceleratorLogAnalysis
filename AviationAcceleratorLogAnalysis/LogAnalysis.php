@@ -12,15 +12,16 @@ class LogAnalysis
 
     /**
      * @param string $filepath
-     * @return LogEntry[]|null
+     * @return LogEntry[]
      * @throws Exception
      */
-    private function parseLogFile(string $filepath): ?array
+    private function parseLogFile(string $filepath): array
     {
         $log_entries = [];
 
         $data = file_get_contents($filepath);
         $data = json_decode($data, false);
+
 
         if(is_array($data)) {
             foreach ($data as $d)
@@ -124,7 +125,7 @@ class LogAnalysis
             }
         }
 
-        return empty($log_entries) ? null : $log_entries;
+        return empty($log_entries) ? [] : $log_entries;
     }
 
 
@@ -132,9 +133,11 @@ class LogAnalysis
      * Will process and output data from the latest log file.
      * @throws Exception
      */
-    public function latest(): ?array
+    public function latest(): array
     {
-        return $this->parseLogFile($this->latestLogFilepath());
+        $logPath = $this->latestLogFilepath();
+
+        return empty($logPath) ? [] : $this->parseLogFile($this->latestLogFilepath());
     }
 
     /**
@@ -144,7 +147,18 @@ class LogAnalysis
     public function latestLogFilepath(bool $filenameOnly=false): ?string
     {
         $log_files = scandir($this->logDirectory);
-        return $filenameOnly ? $log_files[2] : $this->logDirectory . $log_files[2]; // because [0] = "." [1] = ".."
+        $log_files = array_reverse($log_files);
+
+        foreach($log_files as $log_file) {
+        
+            $file_parts = pathinfo($log_file);
+            if($file_parts['extension'] == 'json')
+
+            return $filenameOnly ? $log_file : $this->logDirectory . $log_file;
+        
+        }
+
+        return null;
     }
 
 
