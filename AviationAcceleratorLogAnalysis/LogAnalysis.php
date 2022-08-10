@@ -12,16 +12,15 @@ class LogAnalysis
 
     /**
      * @param string $filepath
-     * @return LogEntry[]
+     * @return LogEntry[]|null
      * @throws Exception
      */
-    private function parseLogFile(string $filepath): array
+    private function parseLogFile(string $filepath): ?array
     {
         $log_entries = [];
 
         $data = file_get_contents($filepath);
         $data = json_decode($data, false);
-
 
         if(is_array($data)) {
             foreach ($data as $d)
@@ -125,7 +124,7 @@ class LogAnalysis
             }
         }
 
-        return empty($log_entries) ? [] : $log_entries;
+        return empty($log_entries) ? null : $log_entries;
     }
 
 
@@ -133,11 +132,9 @@ class LogAnalysis
      * Will process and output data from the latest log file.
      * @throws Exception
      */
-    public function latest(): array
+    public function latest(): ?array
     {
-        $logPath = $this->latestLogFilepath();
-
-        return empty($logPath) ? [] : $this->parseLogFile($this->latestLogFilepath());
+        return $this->parseLogFile($this->latestLogFilepath());
     }
 
     /**
@@ -147,18 +144,9 @@ class LogAnalysis
     public function latestLogFilepath(bool $filenameOnly=false): ?string
     {
         $log_files = scandir($this->logDirectory);
-        $log_files = array_reverse($log_files);
+        $log_files = array_pop($log_files);
 
-        foreach($log_files as $log_file) {
-        
-            $file_parts = pathinfo($log_file);
-            if($file_parts['extension'] == 'json')
-
-            return $filenameOnly ? $log_file : $this->logDirectory . $log_file;
-        
-        }
-
-        return null;
+        return $filenameOnly ? $log_files : $this->logDirectory . $log_files;
     }
 
 
@@ -191,6 +179,11 @@ class LogAnalysis
                 $os_versions[$entry->os_platform][$entry->os_version] = $existing_count + 1;
                 $processed_ip_addresses[] = $entry->ip_address;
             }
+        }
+
+        // Sort order
+        foreach($os_versions as $platform=>$versions) {
+            krsort($os_versions[$platform]);
         }
 
         return $os_versions;
